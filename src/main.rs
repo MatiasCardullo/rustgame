@@ -7,6 +7,10 @@ pub const HEIGHT: f32 = 720.0;
 #[derive(Component)]
 pub struct Miner {
     spawner_timer: Timer
+}#[derive(Component)]
+
+pub struct Tower {
+    spawner_timer: Timer
 }
 
 #[derive(Component,Reflect,Default)]
@@ -54,8 +58,19 @@ fn spawn_basic_scene(
             ..default()
         })
         .insert(Name::new("Ground"));
-    //cube
-    commands
+    
+        commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
+            material: materials.add(Color::rgb(0.3, 0.5, 50.0).into()),
+            transform: Transform::from_xyz(0.0, 0.5, 0.0),
+            ..default()
+        })
+        .insert(Tower {
+            spawner_timer: Timer::from_seconds(1.0, true),
+        })
+        .insert(Name::new("Tower"));
+    /*commands
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
             material: materials.add(Color::rgb(0.3, 0.5, 100.0).into()),
@@ -65,8 +80,8 @@ fn spawn_basic_scene(
         .insert(Miner {
             spawner_timer: Timer::from_seconds(1.0, true),
         })
-        .insert(Name::new("Miner"));
-    commands
+        .insert(Name::new("Miner"));*/
+    /*commands
         .spawn_bundle(PbrBundle {
             mesh: meshes.add(Mesh::from(shape::Torus {
                 radius: 1.0,
@@ -77,7 +92,7 @@ fn spawn_basic_scene(
             transform: Transform::from_xyz(0.0, 0.5, 0.0),
             ..default()
         })
-        .insert(Name::new("Donut"));
+        .insert(Name::new("Donut"));*/
     //light
     commands
         .spawn_bundle(PointLightBundle {
@@ -92,7 +107,32 @@ fn spawn_basic_scene(
         .insert(Name::new("Light"));
 }
 
-fn miner_spawner(
+fn tower_shooting(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut towers: Query<&mut Tower>,
+    time:Res<Time>
+) {
+    for mut tower in &mut towers {
+        tower.spawner_timer.tick(time.delta());
+        if tower.spawner_timer.just_finished() {
+            let spawn_transform =
+                Transform::from_xyz(0.0, 0.7, 0.6).with_rotation(Quat::from_rotation_y(-PI / 2.0));
+            commands.spawn_bundle(PbrBundle {
+                mesh: meshes.add(Mesh::from(shape::Cube { size: 0.1 })),
+                material: materials.add(Color::rgb(0.8, 0.4, 0.4).into()),
+                transform: spawn_transform,
+                ..default()
+            })
+            .insert(Lifetime{
+                timer: Timer::from_seconds(5.0,false)
+            })
+            .insert(Name::new("Bullet"));
+        }
+    }
+}
+/*fn miner_spawner(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -111,12 +151,12 @@ fn miner_spawner(
                 ..default()
             })
             .insert(Lifetime{
-                timer: Timer::from_seconds(0.5,false)
+                timer: Timer::from_seconds(5.0,false)
             })
-            .insert(Name::new("Bullet"));
+            .insert(Name::new("Stone"));
         }
     }
-}
+}*/
 
 fn resource_despawn(
     mut commands: Commands,
