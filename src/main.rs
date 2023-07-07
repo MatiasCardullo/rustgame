@@ -7,16 +7,30 @@ pub const HEIGHT: f32 = 720.0;
 #[derive(Component)]
 pub struct Miner {
     spawner_timer: Timer
-}#[derive(Component)]
+}
 
+#[derive(Component,Reflect,Default)]
+#[reflect(Component)]
 pub struct Tower {
-    spawner_timer: Timer
+    shooting_timer: Timer
 }
 
 #[derive(Component,Reflect,Default)]
 #[reflect(Component)]
 pub struct Lifetime{
     timer:Timer
+}
+
+#[derive(Component,Reflect,Default)]
+#[reflect(Component)]
+pub struct Target{
+    speed:f32
+}
+
+#[derive(Component,Reflect,Default)]
+#[reflect(Component)]
+pub struct Health{
+    value:f32
 }
 
 fn main() {
@@ -31,10 +45,14 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(WorldInspectorPlugin::new())
+		.register_type::<Tower>()
+		.register_type::<Lifetime>()
+		.register_type::<Target>()
         .add_startup_system(spawn_basic_scene)
         .add_startup_system(spawn_camera)
-        .add_system(miner_spawner)
-        .add_system(resource_despawn)
+        .add_system(tower_shooting)
+        //.add_system(miner_spawner)
+        .add_system(bullet_despawn)
         .run();
 }
 
@@ -67,7 +85,7 @@ fn spawn_basic_scene(
             ..default()
         })
         .insert(Tower {
-            spawner_timer: Timer::from_seconds(1.0, true),
+            shooting_timer: Timer::from_seconds(1.0, true),
         })
         .insert(Name::new("Tower"));
     /*commands
@@ -105,6 +123,21 @@ fn spawn_basic_scene(
             ..default()
         })
         .insert(Name::new("Light"));
+	//enemy
+	commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(shape::Torus {
+                radius: 0.5,
+                ring_radius: 0.1,
+                ..default()
+            })),
+            material: materials.add(Color::rgb(0.3, 0.5, 100.0).into()),
+            transform: Transform::from_xyz(-2.0, 0.2, 1.5),
+            ..default()
+        })
+		.insert(Target{speed:0.3})
+		.insert(Health{value:3})
+        .insert(Name::new("Enemy"));
 }
 
 fn tower_shooting(
@@ -115,8 +148,8 @@ fn tower_shooting(
     time:Res<Time>
 ) {
     for mut tower in &mut towers {
-        tower.spawner_timer.tick(time.delta());
-        if tower.spawner_timer.just_finished() {
+        tower.shooting_timer.tick(time.delta());
+        if tower.shooting_timer.just_finished() {
             let spawn_transform =
                 Transform::from_xyz(0.0, 0.7, 0.6).with_rotation(Quat::from_rotation_y(-PI / 2.0));
             commands.spawn_bundle(PbrBundle {
@@ -158,7 +191,7 @@ fn tower_shooting(
     }
 }*/
 
-fn resource_despawn(
+fn bullet_despawn(
     mut commands: Commands,
     mut resource: Query<(Entity,&mut Lifetime)>,
     time:Res<Time>
